@@ -1,7 +1,9 @@
 (function() {
     const nameContractPairs = [];
     const nameRegex = /Name:\s*(.*\(.*\) \(.*GEM\))/;
-    const contractRegex = /Contract:\s*([^\s]+pump)/;
+    // const contractRegex = /Contract:\s*([^\s]+pump)/;
+    const contractRegex = /Contract:\s*([^\s]+)/;
+
 
     async function sendContractPairsToServer(pair) {
         try {
