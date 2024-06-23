@@ -19,34 +19,37 @@
         }
     }
 
+    function extractDataFromElement(element) {
+        const textContent = element.innerText;
+        const nameMatch = textContent.match(nameRegex);
+        const contractMatch = textContent.match(contractRegex);
+
+        if (nameMatch && contractMatch) {
+            const name = nameMatch[1].trim();
+            const contractKey = contractMatch[1].trim();
+            const pair = { name, contractKey };
+
+            if (!nameContractPairs.some(item => item.contractKey === contractKey)) {
+                nameContractPairs.push(pair);
+                console.log(`Name: ${name}, Contract: ${contractKey}`);
+                sendContractPairsToServer(pair);
+            }
+        }
+    }
+
     function extractDataFromElements(elements) {
         elements.forEach((element) => {
-            if (element.textContent.includes("Name:") && element.textContent.includes("GEM)")) {
-                const nameMatch = element.textContent.match(nameRegex);
-                if (nameMatch) {
-                    const name = nameMatch[1].trim();
-                    let sibling = element.nextElementSibling;
-                    while (sibling) {
-                        const contractMatch = sibling.textContent.match(contractRegex);
-                        if (contractMatch) {
-                            const contractKey = contractMatch[1];
-                            const pair = { name, contractKey };
-                            if (!nameContractPairs.some(item => item.contractKey === contractKey)) {
-                                nameContractPairs.push(pair);
-                                console.log(`Name: ${name}, Contract: ${contractKey}`);
-                                sendContractPairsToServer(pair);  // Send each pair to the server
-                            }
-                            break;
-                        }
-                        sibling = sibling.nextElementSibling;
-                    }
-                }
+            if (element.classList && element.classList.contains('text-content') && element.classList.contains('clearfix') && element.classList.contains('with-meta')) {
+                extractDataFromElement(element);
             }
+            element.querySelectorAll('.text-content.clearfix.with-meta').forEach(subElement => {
+                extractDataFromElement(subElement);
+            });
         });
     }
 
     // Initial extraction from existing elements
-    const elements = document.querySelectorAll('*');
+    const elements = document.querySelectorAll('.text-content.clearfix.with-meta');
     extractDataFromElements(elements);
 
     // Observe new elements being added to the DOM
