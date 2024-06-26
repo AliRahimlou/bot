@@ -1,8 +1,9 @@
 (function() {
-    const contractPairs = [];
-    const contractRegex = /\b([a-zA-Z0-9]{32,})\b/;
-    const statusRegex = /Status:\s*(Rich Dev|GEM)/;
-    const marketCapRegex = /Market Cap:\s*([^\n\r]+)/;
+    const nameContractPairs = [];
+    const nameRegex = /Name:\s*(.*\(.*\) \(.*GEM\))/;
+    // const contractRegex = /Contract:\s*([^\s]+pump)/;
+    const contractRegex = /Contract:\s*([^\s]+)/;
+
 
     async function sendContractPairsToServer(pair) {
         try {
@@ -22,24 +23,18 @@
 
     function extractDataFromElement(element) {
         const textContent = element.innerText;
+        const nameMatch = textContent.match(nameRegex);
+        const contractMatch = textContent.match(contractRegex);
 
-        if (statusRegex.test(textContent)) {
-            const contractMatches = textContent.match(contractRegex);
-            const marketCapMatch = textContent.match(marketCapRegex);
+        if (nameMatch && contractMatch) {
+            const name = nameMatch[1].trim();
+            const contractKey = contractMatch[1].trim();
+            const pair = { name, contractKey };
 
-            if (contractMatches && marketCapMatch) {
-                const marketCap = marketCapMatch[1].trim();
-                
-                contractMatches.forEach(contractMatch => {
-                    const contractKey = contractMatch.trim();
-                    const pair = { contractKey, marketCap };
-
-                    if (!contractPairs.some(item => item.contractKey === contractKey)) {
-                        contractPairs.push(pair);
-                        console.log(`Contract: ${contractKey}, Market Cap: ${marketCap}`);
-                        sendContractPairsToServer(pair);
-                    }
-                });
+            if (!nameContractPairs.some(item => item.contractKey === contractKey)) {
+                nameContractPairs.push(pair);
+                console.log(`Name: ${name}, Contract: ${contractKey}`);
+                sendContractPairsToServer(pair);
             }
         }
     }

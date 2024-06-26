@@ -1,3 +1,33 @@
+# url = 'https://www.geckoterminal.com/solana/pools/GdeytBSJyArGHqFhcVG5E8hNGFYqFTvhQp97gTbSpump'
+
+# headers = {
+#     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
+#     'Cache-Control': 'no-cache',
+#     'Pragma': 'no-cache',
+#     'Connection': 'close'  # Ensure the connection is not reused
+# }
+
+# response = requests.get(url, headers=headers)
+
+# if response.status_code == 200:
+#     soup = BeautifulSoup(response.text, 'html.parser')
+
+#     # Find the <tr> containing the market cap information
+#     market_cap_th = soup.find('th', string='Market Cap')
+#     if market_cap_th:
+#         market_cap_td = market_cap_th.find_next('td', class_='number-1')
+#         if market_cap_td:
+#             market_cap_span = market_cap_td.find('span')
+#             if market_cap_span:
+#                 market_cap_value = market_cap_span.text.strip()
+#                 print('Current Mc:' , market_cap_value)
+# else:
+#     print(f'Request failed with status code: {response.status_code}')
+
+
+
+# working server but 25% of called 
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from telethon import TelegramClient
