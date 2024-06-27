@@ -229,35 +229,29 @@ client = TelegramClient('session_name', api_id, api_hash)
 def parse_market_cap(market_cap_str):
     market_cap_str = market_cap_str.lower()
     if 'k' in market_cap_str:
-        return float(market_cap_str.replace('$', '').replace(',', '').replace('k', '')) * 1000
+        value = float(market_cap_str.replace('$', '').replace(',', '').replace('k', '')) * 1000
     elif 'm' in market_cap_str:
-        return float(market_cap_str.replace('$', '').replace(',', '').replace('m', '')) * 1000000
+        value = float(market_cap_str.replace('$', '').replace(',', '').replace('m', '')) * 1000000
     else:
-        return float(market_cap_str.replace('$', '').replace(',', ''))
+        value = float(market_cap_str.replace('$', '').replace(',', ''))
+    return round(value, 1)
 
 def get_current_market_cap(contract_id):
-    url = f'https://www.geckoterminal.com/solana/pools/{contract_id}'
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache',
-        'Connection': 'close'  # Ensure the connection is not reused
-    }
+    url = f'https://gmgn.ai/sol/token/{contract_id}'
     try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
-        market_cap_th = soup.find('th', string='Market Cap')
-        if market_cap_th:
-            market_cap_td = market_cap_th.find_next('td', class_='number-1')
-            if market_cap_td:
-                market_cap_span = market_cap_td.find('span')
-                if market_cap_span:
-                    market_cap_value = market_cap_span.text.strip()
-                    return parse_market_cap(market_cap_value)
+        response = requests.get(url)
+        if response.status_code == 200:
+            response_text = response.text
+            start_index = response_text.find('"market_cap":') + len('"market_cap":')
+            end_index = response_text.find(',', start_index)
+            market_cap = response_text[start_index:end_index].strip()
+            return parse_market_cap(market_cap)
+        else:
+            print(f"Failed to retrieve data: {response.status_code}")
+            return None
     except Exception as e:
         print(f"Error fetching market cap for {contract_id}: {e}")
-    return None
+        return None
 
 @app.route('/save_contracts', methods=['POST'])
 def save_contracts():
@@ -333,7 +327,7 @@ async def _process_new_contracts():
                     initial_market_cap = current_market_cap
                     while current_market_cap > initial_market_cap * 0.75:
                         print(f"Waiting for market cap to drop for {contract_key} (Current: {current_market_cap}, Initial: {initial_market_cap})")
-                        await asyncio.sleep(60)  # Wait for a minute before rechecking
+                        await asyncio.sleep(3)  # Wait for a minute before rechecking
                         current_market_cap = get_current_market_cap(contract_key)
                     messages.append(f"{contract_key}")
 
