@@ -20,6 +20,33 @@
         }
     }
 
+
+    (function() {
+        const originalConsoleError = console.error;
+    
+        console.error = function(...args) {
+            // Check if any of the arguments contain the "failed: WebSocket" string
+            const containsWebSocketError = args.some(arg => 
+                typeof arg === 'string' && arg.includes('failed: WebSocket')
+            );
+    
+            if (containsWebSocketError) {
+                triggerPageReload();
+            }
+    
+            // Call the original console.error method to ensure the error still gets logged
+            originalConsoleError.apply(console, args);
+        };
+    
+        function triggerPageReload() {
+            console.log('Reloading page due to WebSocket error detected in console logs...');
+            setTimeout(() => {
+                location.reload();
+            }, 5000); // Delay the reload by 5 seconds to prevent immediate reload loop
+        }
+    })();
+    
+
     function extractDataFromElement(element) {
         const textContent = element.innerText;
 

@@ -74,7 +74,7 @@ def save_contracts():
         contract_ids.add((contract_key, called_market_cap))
         with open('contracts.json', 'w') as f:
             json.dump(list(contract_ids), f)
-        executor.submit(process_new_contracts)
+        executor.submit(process_contract, contract_key, called_market_cap)
     return jsonify(success=True)
 
 @app.route('/get_contracts', methods=['GET'])
@@ -108,50 +108,44 @@ async def send_messages(chat_id, messages):
         except Exception as e:
             print(f"Error sending messages: {e}")
 
-def process_new_contracts():
-    with processing_lock:
-        asyncio.run(_process_new_contracts())
+def process_contract(contract_key, called_market_cap):
+    asyncio.run(_process_contract(contract_key, called_market_cap))
 
-async def _process_new_contracts():
+async def _process_contract(contract_key, called_market_cap):
     global sent_contract_ids
 
-    current_contracts = contract_ids
     sent_contract_ids = load_json('sent_contracts.json')
 
-    new_contracts = current_contracts - sent_contract_ids
-
-    if new_contracts:
-        messages = []
-        for contract_key, called_market_cap in new_contracts:
-            print(f"Checking contract {contract_key} with called market cap {called_market_cap}")
-            current_market_cap = get_current_market_cap(contract_key)
-            if current_market_cap is not None:
-                print(f"Current market cap for {contract_key} is {current_market_cap}")
-                if current_market_cap <= called_market_cap:
-                    messages.append(f"{contract_key}")
+    if (contract_key, called_market_cap) not in sent_contract_ids:
+        print(f"Checking contract {contract_key} with called market cap {called_market_cap}")
+        current_market_cap = get_current_market_cap(contract_key)
+        if current_market_cap is not None:
+            print(f"Current market cap for {contract_key} is {current_market_cap}")
+            if current_market_cap <= called_market_cap:
+                messages = [f"{contract_key}"]
+                await send_messages(chat_id, messages)
+                with db_lock:
+                    sent_contract_ids.add((contract_key, called_market_cap))
+                    save_json('sent_contracts.json', sent_contract_ids)
+            else:
+                initial_market_cap = current_market_cap
+                start_time = time.time()
+                while current_market_cap > initial_market_cap * 0.75:
+                    if time.time() - start_time > 600:  # 10 minutes
+                        print(f"Contract {contract_key} not satisfied within 10 minutes")
+                        with db_lock:
+                            sent_contract_ids.add((contract_key, 'not satisfied'))
+                            save_json('sent_contracts.json', sent_contract_ids)
+                        break
+                    print(f"Waiting for market cap to drop for {contract_key} (Current: {current_market_cap}, Initial: {initial_market_cap})")
+                    await asyncio.sleep(3)  # Wait for a minute before rechecking
+                    current_market_cap = get_current_market_cap(contract_key)
                 else:
-                    initial_market_cap = current_market_cap
-                    start_time = time.time()
-                    while current_market_cap > initial_market_cap * 0.75:
-                        if time.time() - start_time > 600:  # 10 minutes
-                            print(f"Contract {contract_key} not satisfied within 10 minutes")
-                            with db_lock:
-                                sent_contract_ids.add((contract_key, 'not satisfied'))
-                                save_json('sent_contracts.json', sent_contract_ids)
-                            break
-                        print(f"Waiting for market cap to drop for {contract_key} (Current: {current_market_cap}, Initial: {initial_market_cap})")
-                        await asyncio.sleep(3)  # Wait for a minute before rechecking
-                        current_market_cap = get_current_market_cap(contract_key)
-                    else:
-                        messages.append(f"{contract_key}")
-        if messages:
-            await send_messages(chat_id, messages)
-
-            with db_lock:
-                sent_contract_ids.update(new_contracts)
-                save_json('sent_contracts.json', sent_contract_ids)
-
-    print("Finished processing new contracts")
+                    messages = [f"{contract_key}"]
+                    await send_messages(chat_id, messages)
+                    with db_lock:
+                        sent_contract_ids.add((contract_key, called_market_cap))
+                        save_json('sent_contracts.json', sent_contract_ids)
 
 if __name__ == "__main__":
     contract_ids = load_json('contracts.json')
