@@ -134,7 +134,7 @@ async def _process_contract(contract_key, called_market_cap):
                     if time.time() - start_time > 600:  # 10 minutes
                         print(f"Contract {contract_key} not satisfied within 10 minutes")
                         with db_lock:
-                            sent_contract_ids.add((contract_key, 'not satisfied'))
+                            sent_contract_ids.add((contract_key, called_market_cap))
                             save_json('sent_contracts.json', sent_contract_ids)
                         break
                     print(f"Waiting for market cap to drop for {contract_key} (Current: {current_market_cap}, Initial: {initial_market_cap})")
