@@ -200,4 +200,4 @@ def get_current_market_cap_with_source(contract_id):
 if __name__ == "__main__":
     contract_ids = load_json('contracts.json')
     sent_contract_ids = load_json('sent_contracts.json')
-    app.run(host='127.0.0.1', port=int(os.getenv('PORT', 5000)))
+    app.run(host='127.0.0.1', port=int(os.getenv('PORT', 5001)))

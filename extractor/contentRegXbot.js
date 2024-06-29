@@ -39,9 +39,9 @@
 
         if (nameMatch && contractMatch) {
             const name = nameMatch[1].trim();
-            const fakeMc = "$50.5k"
+            const marketCap = "$50.5k"
             const contractKey = contractMatch[1].trim();
-            const pair = { contractKey, fakeMc };
+            const pair = { contractKey, marketCap };
 
             if (!nameContractPairs.some(item => item.contractKey === contractKey)) {
                 nameContractPairs.push(pair);
