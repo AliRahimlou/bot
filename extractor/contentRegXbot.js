@@ -7,7 +7,7 @@
 
     async function sendContractPairsToServer(pair) {
         try {
-            const response = await fetch('http://127.0.0.1:5000/save_contracts', {
+            const response = await fetch('http://127.0.0.1:5001/save_contracts', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -21,6 +21,17 @@
         }
     }
 
+    (function reloadEveryFiveMinutes() {
+        // Function to reload the page
+        function reloadPage() {
+            console.log('Reloading page automatically every 30 minutes...');
+            location.reload();
+        }
+    
+        // Set interval to reload the page every 2hrs minutes 
+        setInterval(reloadPage, 7200000); // 2hrs minutes in milliseconds
+    })();
+
     function extractDataFromElement(element) {
         const textContent = element.innerText;
         const nameMatch = textContent.match(nameRegex);
@@ -28,8 +39,9 @@
 
         if (nameMatch && contractMatch) {
             const name = nameMatch[1].trim();
+            const fakeMc = "$50.5k"
             const contractKey = contractMatch[1].trim();
-            const pair = { name, contractKey };
+            const pair = { contractKey, fakeMc };
 
             if (!nameContractPairs.some(item => item.contractKey === contractKey)) {
                 nameContractPairs.push(pair);
