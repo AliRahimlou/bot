@@ -1,0 +1,17 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+venv
+ENV
+.idea
+.vscode
+*.git
+*.swp
+.env
+session_name.session
+sent_contracts.json
+contracts.json
+node_modules

@@ -1,0 +1,13 @@
+version: '3'
+services:
+  chat-extractor:
+    build: .
+    ports:
+      - "${PORT}:${PORT}"
+    environment:
+      FLASK_APP: ${FLASK_APP}
+      FLASK_ENV: ${FLASK_ENV}
+      API_ID: ${API_ID}
+      API_HASH: ${API_HASH}
+      IP: ${IP}
+    command: flask run --host=127.0.0.1 --port=${PORT}

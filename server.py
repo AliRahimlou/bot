@@ -19,6 +19,7 @@ load_dotenv()
 api_id = os.getenv('API_ID')
 api_hash = os.getenv('API_HASH')
 chat_id = '@paris_trojanbot'  # The chat ID or username of the chat you want to send messages to
+IP = os.getenv('IP')
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -199,4 +200,4 @@ def get_current_market_cap_with_source(contract_id):
 if __name__ == "__main__":
     contract_ids = load_json('contracts.json')
     sent_contract_ids = load_json('sent_contracts.json')
-    app.run(debug=False)
+    app.run(host='127.0.0.1', port=int(os.getenv('PORT', 5000)))
