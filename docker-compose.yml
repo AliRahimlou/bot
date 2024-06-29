@@ -10,4 +10,4 @@ services:
       API_ID: ${API_ID}
       API_HASH: ${API_HASH}
       IP: ${IP}
-    command: flask run --host=127.0.0.1 --port=${PORT}
+    command: flask run --host=0.0.0.0 --port=${PORT}

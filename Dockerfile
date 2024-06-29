@@ -17,4 +17,4 @@ EXPOSE ${PORT}
 ENV FLASK_APP=${FLASK_APP}
 
 # Run server.py when the container launches
-CMD ["flask", "run", "--host=127.0.0.1", "--port=${PORT}"]
+CMD ["flask", "run", "--host=0.0.0.0", "--port=${PORT}"]

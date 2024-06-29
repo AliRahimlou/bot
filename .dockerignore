@@ -11,7 +11,3 @@ ENV
 *.git
 *.swp
 .env
-session_name.session
-sent_contracts.json
-contracts.json
-node_modules
