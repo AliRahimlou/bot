@@ -1,24 +1,63 @@
 (function() {
     const contractPairs = [];
     const contractRegex = /\b([a-zA-Z0-9]{32,})\b/;
-    const statusRegex = /Status:\s*(Rich Dev|GEM)/;
+    // const statusRegex = /Status:\s*(Rich Dev|GEM)/;
+    const statusRegex = /Status:\s*(GEM)/;
     const marketCapRegex = /Market Cap:\s*([^\n\r]+)/;
 
+    // async function sendContractPairsToServer(pair) {
+    //     try {
+    //         const response = await fetch('http://127.0.0.1:5000/save_contracts', {
+    //             method: 'POST',
+    //             headers: {
+    //                 'Content-Type': 'application/json',
+    //             },
+    //             body: JSON.stringify(pair),
+    //         });
+    //         const result = await response.json();
+    //         console.log(`Server response: ${JSON.stringify(result)}`);
+    //     } catch (error) {
+    //         console.error('Error sending contract pair to server:', error);
+    //     }
+    // }
+
     async function sendContractPairsToServer(pair) {
-        try {
-            const response = await fetch('http://127.0.0.1:5000/save_contracts', {
+        const urls = [
+            'http://127.0.0.1:5000/save_contracts',
+            'http://127.0.0.1:5001/save_contracts'
+        ];
+    
+        const requests = urls.map(url =>
+            fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(pair),
+            }).then(response => response.json())
+        );
+    
+        try {
+            const results = await Promise.all(requests);
+            results.forEach((result, index) => {
+                console.log(`Server response from ${urls[index]}: ${JSON.stringify(result)}`);
             });
-            const result = await response.json();
-            console.log(`Server response: ${JSON.stringify(result)}`);
         } catch (error) {
-            console.error('Error sending contract pair to server:', error);
+            console.error('Error sending contract pair to servers:', error);
         }
     }
+    
+
+    (function reloadEveryFiveMinutes() {
+        // Function to reload the page
+        function reloadPage() {
+            console.log('Reloading page automatically every 30 minutes...');
+            location.reload();
+        }
+    
+        // Set interval to reload the page every 30 minutes 
+        setInterval(reloadPage, 7200000); // 30 minutes in milliseconds
+    })();
     
 
     function extractDataFromElement(element) {
