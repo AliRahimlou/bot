@@ -1,2 +1,5 @@
 node_modules
 .env
+session_name.session
+sent_contracts.json
+contracts.json
