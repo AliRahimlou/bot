@@ -11,3 +11,5 @@ services:
       API_HASH: ${API_HASH}
       IP: ${IP}
     command: flask run --host=0.0.0.0 --port=${PORT}
+    volumes:
+      - ./data:/usr/src/app/data
