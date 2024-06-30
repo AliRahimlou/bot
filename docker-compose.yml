@@ -13,4 +13,6 @@ services:
     volumes:
       - ./data:/usr/src/app/data
       - ./session_name.session:/usr/src/app/session_name.session
+      - ./contracts.json:/usr/src/app/contracts.json
+      - ./sent_contracts.json:/usr/src/app/sent_contracts.json
     command: flask run --host=0.0.0.0 --port=${PORT}
