@@ -175,8 +175,8 @@ async def _process_contract(contract_key, called_market_cap):
                 print(f"Contract {contract_key} not satisfied within 5 minutes")
                 return
 
-            if current_market_cap <= initial_market_cap * 0.65:
-                print(f"Market cap dropped 35% for {contract_key} (Current: {current_market_cap}, Initial: {initial_market_cap})")
+            if current_market_cap <= initial_market_cap * 0.40:
+                print(f"Market cap dropped 60% for {contract_key} (Current: {current_market_cap}, Initial: {initial_market_cap})")
                 messages = [f"{contract_key}"]
                 await send_messages(chat_id, messages)
                 with db_lock:
