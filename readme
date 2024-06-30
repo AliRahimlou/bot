@@ -1,3 +1,6 @@
+chmod +x start.sh
+docker build --target auth-stage -t auth-stage .
+docker run -it --rm --env-file .env -v $(pwd)/session_name.session:/usr/src/app/session_name.session auth-stage
 docker-compose up --build
 docker-compose up -d
 https://my.telegram.org/apps
