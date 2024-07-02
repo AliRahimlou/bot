@@ -27,8 +27,8 @@
             location.reload();
         }
     
-        // Set interval to reload the page every 2 hours
-        setInterval(reloadPage, 7200000); // 2 hours in milliseconds
+        // Set interval to reload the page every 1 hour
+        setInterval(reloadPage, 3600000); // 1 hour in milliseconds
     })();
 
     function extractDataFromElement(element) {
