@@ -171,7 +171,7 @@ async def _process_contract(contract_key, called_market_cap):
         # Start watching for market cap drop
         start_time = time.time()
         while True:
-            if time.time() - start_time > 300:  # 5 minutes
+            if time.time() - start_time > 10:  # 10 sec for now
                 print(f"Contract {contract_key} not satisfied within 5 minutes")
                 return
 
