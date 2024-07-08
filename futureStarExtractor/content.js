@@ -30,7 +30,9 @@
                 const parentText = link.parentElement.innerText;
                 const marketCapMatch = parentText.match(marketCapRegex);
                 if (marketCapMatch) {
-                    const marketCap = marketCapMatch[1].replace(/,/g, '');
+                    // const marketCap = marketCapMatch[1].replace(/,/g, '');
+                    const marketCap = "$47.5k"
+
                     if (!loggedContracts.has(contractKey)) {
                         loggedContracts.add(contractKey);
                         console.log(`Contract: ${contractKey}, Market Cap: ${marketCap}`);
