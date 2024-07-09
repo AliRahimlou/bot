@@ -3,3 +3,4 @@ node_modules
 contracts.json
 sent_contracts.json
 session_name.session
+.DS_Store
