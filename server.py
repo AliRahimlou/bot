@@ -284,7 +284,7 @@ async def _process_contract(contract_key, called_market_cap):
                 save_json('sent_contracts.json', sent_contract_ids)
             return
 
-        target_market_cap = initial_market_cap * (1 - average_dip_percentage / 100 * 1.02)  # Adding 2% buffer
+        target_market_cap = round(initial_market_cap * (1 - average_dip_percentage / 100 * 1.02), 1)  # Adding 2% buffer
 
         print(f"Average significant dip percentage: {average_dip_percentage}%, Target market cap: {target_market_cap}")
 
