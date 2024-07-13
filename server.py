@@ -48,60 +48,37 @@ def parse_market_cap(market_cap_str):
         value = float(market_cap_str.replace('$', '').replace(',', ''))
     return round(value, 1)
 
-def get_current_market_cap(contract_id):
-    market_cap, source = get_market_cap_from_gmgn(contract_id)
-    if market_cap is None:
-        market_cap, source = get_market_cap_from_geckoterminal(contract_id)
-    return market_cap, source
-
-def get_market_cap_from_gmgn(contract_id):
+def get_market_data_from_gmgn(contract_id):
     url = f'https://gmgn.ai/sol/token/{contract_id}'
     try:
         response = requests.get(url)
         if response.status_code == 200:
-            response_text = response.text
-            start_index = response_text.find('"market_cap":') + len('"market_cap":')
-            end_index = response_text.find(',', start_index)
-            market_cap = response_text[start_index:end_index].strip()
-            return parse_market_cap(market_cap), 'gmgn'
+            soup = BeautifulSoup(response.content, 'html.parser')
+            script_tag = soup.find('script', {'id': '__NEXT_DATA__'})
+            if not script_tag:
+                raise Exception("Couldn't find the script tag with id __NEXT_DATA__")
+            json_data = json.loads(script_tag.string)
+            token_info = json_data['props']['pageProps']['tokenInfo']
+            market_cap = token_info.get('market_cap', 'N/A')
+            volume = token_info.get('volume_5m', 'N/A')
+            holders = token_info.get('holder_count', 'N/A')
+            if market_cap != 'N/A':
+                market_cap = round(float(market_cap), 1)
+            if volume != 'N/A':
+                volume = round(float(volume), 1)
+            return {
+                'market_cap': market_cap,
+                'volume': volume,
+                'holders': holders,
+            }
         else:
             print(f"Failed to retrieve data from GMGN: {response.status_code}")
-            return None, 'gmgn'
+            return None
     except Exception as e:
-        print(f"Error fetching market cap from GMGN for {contract_id}: {e}")
-        return None, 'gmgn'
-
-def get_market_cap_from_geckoterminal(contract_id):
-    url = f'https://www.geckoterminal.com/solana/pools/{contract_id}'
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache',
-        'Connection': 'close'  # Ensure the connection is not reused
-    }
-    try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
-        market_cap_th = soup.find('th', string='Market Cap')
-        if market_cap_th:
-            market_cap_td = market_cap_th.find_next('td', class_='number-1')
-            if market_cap_td:
-                market_cap_span = market_cap_td.find('span')
-                if market_cap_span:
-                    market_cap_value = market_cap_span.text.strip()
-                    return parse_market_cap(market_cap_value), 'geckoterminal'
-    except Exception as e:
-        print(f"Error fetching market cap from GeckoTerminal for {contract_id}: {e}")
-    return None, 'geckoterminal'
+        print(f"Error fetching market data from GMGN for {contract_id}: {e}")
+        return None
 
 def get_contract_creation_timestamp(contract_id):
-    creation_date_time, source = get_creation_timestamp_from_gmgn(contract_id)
-    if creation_date_time is None:
-        creation_date_time, source = get_creation_timestamp_from_geckoterminal(contract_id)
-    return creation_date_time, source
-
-def get_creation_timestamp_from_gmgn(contract_id):
     url = f'https://gmgn.ai/sol/token/{contract_id}'
     try:
         response = requests.get(url)
@@ -111,53 +88,13 @@ def get_creation_timestamp_from_gmgn(contract_id):
             data = json.loads(script_data)
             creation_timestamp = data['props']['pageProps']['tokenInfo']['creation_timestamp']
             creation_date_time = datetime.datetime.fromtimestamp(creation_timestamp)
-            return creation_date_time, 'gmgn'
+            return creation_date_time
         else:
             print(f"Failed to retrieve data from GMGN: {response.status_code}")
-            return None, 'gmgn'
+            return None
     except Exception as e:
         print(f"Error fetching creation timestamp from GMGN for {contract_id}: {e}")
-        return None, 'gmgn'
-
-def get_creation_timestamp_from_geckoterminal(contract_id):
-    url = f'https://www.geckoterminal.com/solana/pools/{contract_id}'
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache',
-        'Connection': 'close'  # Ensure the connection is not reused
-    }
-
-    try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        age_th = soup.find('span', string='Age')
-        if age_th:
-            age_td = age_th.find_parent('th').find_next_sibling('td')
-            if age_td:
-                age_span = age_td.find('span')
-                if age_span:
-                    age_value = age_span.text.strip()
-                    creation_date_time = convert_age_to_datetime(age_value)
-                    return creation_date_time, 'geckoterminal'
-    except Exception as e:
-        print(f"Error fetching age from GeckoTerminal for {contract_id}: {e}")
-    return None, 'geckoterminal'
-
-def convert_age_to_datetime(age_value):
-    now = datetime.datetime.now()
-    if "minute" in age_value:
-        minutes = int(age_value.split()[0])
-        return now - datetime.timedelta(minutes=minutes)
-    if "hour" in age_value:
-        hours = int(age_value.split()[0])
-        return now - datetime.timedelta(hours=hours)
-    if "day" in age_value:
-        days = int(age_value.split()[0])
-        return now - datetime.timedelta(days=days)
-    return None
+        return None
 
 @app.route('/save_contracts', methods=['POST'])
 def save_contracts():
@@ -211,22 +148,22 @@ async def send_messages(chat_id, messages):
 def process_contract(contract_key, called_market_cap):
     asyncio.run(_process_contract(contract_key, called_market_cap))
 
-def is_trending_upward(market_caps):
-    """Return True if market caps are generally increasing, otherwise False."""
-    if len(market_caps) < 2:
+def is_trending_upward(data):
+    """Return True if data is generally increasing, otherwise False."""
+    if len(data) < 2:
         return False
-    valid_caps = filter_invalid_market_caps(market_caps)
-    return np.polyfit(range(len(valid_caps)), valid_caps, 1)[0] > 0
+    valid_data = [d for d in data if np.isfinite(d)]
+    return np.polyfit(range(len(valid_data)), valid_data, 1)[0] > 0
 
-def is_trending_downward(market_caps):
-    """Return True if market caps are generally decreasing, otherwise False."""
-    if len(market_caps) < 2:
+def is_trending_downward(data):
+    """Return True if data is generally decreasing, otherwise False."""
+    if len(data) < 2:
         return False
-    valid_caps = filter_invalid_market_caps(market_caps)
-    return np.polyfit(range(len(valid_caps)), valid_caps, 1)[0] < 0
+    valid_data = [d for d in data if np.isfinite(d)]
+    return np.polyfit(range(len(valid_data)), valid_data, 1)[0] < 0
 
-def filter_invalid_market_caps(market_caps):
-    return [cap for cap in market_caps if np.isfinite(cap)]
+def filter_invalid_data(data):
+    return [d for d in data if np.isfinite(d)]
 
 async def _process_contract(contract_key, called_market_cap):
     global sent_contract_ids
@@ -235,7 +172,7 @@ async def _process_contract(contract_key, called_market_cap):
 
     if (contract_key, called_market_cap) not in sent_contract_ids:
         # Check contract creation time
-        creation_date_time, source = get_contract_creation_timestamp(contract_key)
+        creation_date_time = get_contract_creation_timestamp(contract_key)
         if creation_date_time is None or (datetime.datetime.now() - creation_date_time).total_seconds() > 86400:
             print(f"Skipping contract {contract_key} because it is older than 24 hours")
             with db_lock:
@@ -244,26 +181,49 @@ async def _process_contract(contract_key, called_market_cap):
             return
 
         print(f"Checking contract {contract_key} with called market cap {called_market_cap} at {creation_date_time}")
-        current_market_cap, source = get_current_market_cap_with_source(contract_key)
-        if current_market_cap is None:
-            print(f"Skipping contract {contract_key} due to error fetching market cap")
+        current_market_data = get_market_data_from_gmgn(contract_key)
+        if current_market_data is None:
+            print(f"Skipping contract {contract_key} due to error fetching market data")
             with db_lock:
                 sent_contract_ids.add((contract_key, called_market_cap))
                 save_json('sent_contracts.json', sent_contract_ids)
             return
 
-        print(f"Current market cap for {contract_key} is {current_market_cap}")
-        initial_market_cap = current_market_cap
+        print(f"Current market data for {contract_key}: Market Cap: {current_market_data['market_cap']}, Volume: {current_market_data['volume']}, Holders: {current_market_data['holders']}")
+        initial_market_cap = current_market_data['market_cap']
+        initial_volume = current_market_data['volume']
+        initial_holders = current_market_data['holders']
 
-        # Scan for 5 minutes to observe dips
+        # Scan for 3 minutes to observe dips and trends
         start_time = time.time()
         market_caps = []
-        while time.time() - start_time < 300:  # 300 seconds = 5 minutes
-            market_cap, source = get_current_market_cap_with_source(contract_key)
-            if market_cap is not None:
-                market_caps.append(market_cap)
-                print(f"Current market cap for {contract_key} during 5-minute scan: {market_cap} Initial: {initial_market_cap}")
-            time.sleep(2 if source == 'gmgn' else 5)
+        volumes = []
+        holders = []
+        while time.time() - start_time < 180:  # 180 seconds = 3 minutes
+            market_data = get_market_data_from_gmgn(contract_key)
+            if market_data is not None:
+                market_caps.append(market_data['market_cap'])
+                volumes.append(market_data['volume'])
+                holders.append(market_data['holders'])
+                if time.time() - start_time < 30:
+                    print(f"Current market data for {contract_key} during 30-sec scan: Market Cap: {market_data['market_cap']}, Volume: {market_data['volume']}, Holders: {market_data['holders']} Initial Market Cap: {initial_market_cap}")
+                else:
+                    print(f"Current market data for {contract_key} during 3-minute scan: Market Cap: {market_data['market_cap']}, Volume: {market_data['volume']}, Holders: {market_data['holders']} Initial Market Cap: {initial_market_cap}")
+            else:
+                print(f"Error fetching market data during 3-minute scan for {contract_key}. Continuing scan...")
+            time.sleep(2)
+
+            # Check for upward trend during the first 30 seconds
+            if time.time() - start_time >= 30 and time.time() - start_time < 32:
+                # if is_trending_upward(market_caps) and is_trending_upward(volumes) and is_trending_upward(holders) and market_data['volume'] >= 35000:
+                if is_trending_upward(volumes) and is_trending_upward(holders) and market_data['volume'] >= 35000:
+                    print(f"Market cap, volume, and holders are trending upwards for {contract_key} within the first 30 seconds and volume is no lower than 35000")
+                    messages = [f"{contract_key}"]
+                    await send_messages(chat_id, messages)
+                    with db_lock:
+                        sent_contract_ids.add((contract_key, called_market_cap))
+                        save_json('sent_contracts.json', sent_contract_ids)
+                    return
 
         # Identify significant dips
         dips = [(initial_market_cap - cap) / initial_market_cap * 100 for cap in market_caps if cap < initial_market_cap]
@@ -277,8 +237,8 @@ async def _process_contract(contract_key, called_market_cap):
         # Calculate the average of significant dips
         average_dip_percentage = sum(dips) / len(dips)
         average_dip_percentage = round(average_dip_percentage, 1)  # Rounding to one decimal place
-        if average_dip_percentage < 5:
-            print(f"Skipping contract {contract_key} because the average significant dip percentage is below 5%")
+        if average_dip_percentage < 12.5:
+            print(f"Skipping contract {contract_key} because the average significant dip percentage is below 15%")
             with db_lock:
                 sent_contract_ids.add((contract_key, called_market_cap))
                 save_json('sent_contracts.json', sent_contract_ids)
@@ -290,38 +250,45 @@ async def _process_contract(contract_key, called_market_cap):
 
         # Calculate the range for target market cap with ±5% buffer
         lower_bound = round(target_market_cap * 0.90, 1)
-        upper_bound = round(target_market_cap * 1.10, 1)
-
+        upper_bound = round(target_market_cap * 1.05, 1)
+        
         # Start a 2-minute timer to see if the target market cap is hit
         start_time = time.time()
         while time.time() - start_time < 120:
-            market_cap, source = get_current_market_cap_with_source(contract_key)
-            if market_cap is not None:
-                print(f"Current market cap for {contract_key} during additional 2-minute wait: {market_cap} Target: {target_market_cap}")
-            if lower_bound <= market_cap <= upper_bound:
-                print(f"Market cap is within the target range for {contract_key} (Current: {market_cap}, Target range: {lower_bound} - {upper_bound})")
-                messages = [f"{contract_key}"]
-                await send_messages(chat_id, messages)
-                with db_lock:
-                    sent_contract_ids.add((contract_key, called_market_cap))
-                    save_json('sent_contracts.json', sent_contract_ids)
-                return
-            time.sleep(2 if source == 'gmgn' else 5)
+            market_data = get_market_data_from_gmgn(contract_key)
+            if market_data is not None:
+                market_caps.append(market_data['market_cap'])
+                volumes.append(market_data['volume'])
+                holders.append(market_data['holders'])
+                print(f"Current market data for {contract_key} during additional 2-minute wait: Market Cap: {market_data['market_cap']}, Volume: {market_data['volume']}, Holders: {market_data['holders']} Target Market Cap: {target_market_cap}")
+                if time.time() - start_time < 15 and is_trending_upward(market_caps) and not is_trending_downward(volumes) and market_data['volume'] >= 35000 and not is_trending_downward(holders):
+                    print(f"Market cap, volume, and holders are trending upwards for {contract_key} within the first 15 seconds and volume is no lower than 35000")
+                    messages = [f"{contract_key}"]
+                    await send_messages(chat_id, messages)
+                    with db_lock:
+                        sent_contract_ids.add((contract_key, called_market_cap))
+                        save_json('sent_contracts.json', sent_contract_ids)
+                    return
+                if lower_bound <= market_data['market_cap'] <= upper_bound and not is_trending_downward(holders) and not is_trending_downward(volumes) and market_data['volume'] >= 40000:
+                    print(f"Market cap is within the target range for {contract_key} (Current: {market_data['market_cap']}, Target range: {lower_bound} - {upper_bound}), holders and volumes are not trending downward, and volume is at least 40000")
+                    messages = [f"{contract_key}"]
+                    await send_messages(chat_id, messages)
+                    with db_lock:
+                        sent_contract_ids.add((contract_key, called_market_cap))
+                        save_json('sent_contracts.json', sent_contract_ids)
+                    return
+
+            else:
+                print(f"Error fetching market data during additional 2-minute wait for {contract_key}. Continuing wait...")
+            time.sleep(2)
 
         print(f"Contract {contract_key} did not hit the target within 2 minutes")
         with db_lock:
             sent_contract_ids.add((contract_key, called_market_cap))
             save_json('sent_contracts.json', sent_contract_ids)
 
-# Additional functions remain the same
-
-def get_current_market_cap_with_source(contract_id):
-    market_cap, source = get_market_cap_from_gmgn(contract_id)
-    if market_cap is None:
-        market_cap, source = get_market_cap_from_geckoterminal(contract_id)
-    return market_cap, source
 
 if __name__ == "__main__":
     contract_ids = load_json('contracts.json')
     sent_contract_ids = load_json('sent_contracts.json')
-    app.run(host='127.0.0.1', port=5001, debug=False)
+    app.run(host=IP, port=int(os.getenv('PORT', 5001)), debug=False)
